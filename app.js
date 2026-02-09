@@ -5,6 +5,8 @@ const Listing = require("./models/listing.js");
 const path = require("path");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
+const wrapAsync = require("./utils/wrapAsync.js");
+const ExpressError = require("./utils/ExpressError.js");
 
 const MONGO_URL = "mongodb://127.0.0.1:27017/wanderlust";
 
@@ -50,11 +52,17 @@ app.get("/listings/:id" , async (req,res) => {
     res.render("listings/show.ejs", {listing});
 });
 
-app.post("/listings", async (req, res) => {
+//Create Route
+app.post(
+  "/listings", 
+  wrapAsync(async (req, res) => {
+ 
   const newListing = new Listing(req.body.listing);
   await newListing.save();
   res.redirect("/listings");
-});
+  
+  })
+);
 
 //Edit Route
 app.get("/listings/:id/edit", async (req,res) => {
@@ -92,7 +100,10 @@ app.delete("/listings/:id" , async (req,res) =>{
 //   res.send("successful testing");
 // });
 
-
+app.use((err, req, res, next) => {
+  let {statusCode, message} = err;
+  res.status(statusCode).send(message);
+});
 
 app.listen(8080, () => {
     console.log("server is listening to port 8080");
